@@ -1,0 +1,249 @@
+<?php
+
+class TeamsController extends Controller
+{
+/**
+	 * @var string the default layout for the views. Defaults to '//layouts/column2', meaning
+	 * using two-column layout. See 'protected/views/layouts/column2.php'.
+	 */
+	public $layout='//layouts/column2';
+
+	/**
+	 * @return array action filters
+	 */
+	public function filters()
+	{
+		return array(
+			'accessControl', // perform access control for CRUD operations
+			'postOnly + delete', // we only allow deletion via POST request
+		);
+	}
+
+	/**
+	 * Specifies the access control rules.
+	 * This method is used by the 'accessControl' filter.
+	 * @return array access control rules
+	 */
+	public function accessRules()
+	{
+		return array(
+			array('allow',  // allow all users to perform 'index' and 'view' actions
+				'actions'=>array('index','view'),
+				'users'=>array('*'),
+			),
+			array('allow', // allow authenticated user to perform 'create' and 'update' actions
+				'actions'=>array('create','update'),
+				'users'=>array('@'),
+			),
+			array('allow', // allow admin user to perform 'admin' and 'delete' actions
+				'actions'=>array('admin','delete'),
+				'users'=>array('admin'),
+			),
+			array('deny',  // deny all users
+				'users'=>array('*'),
+			),
+		);
+	}
+
+	/**
+	 * 
+	 * 
+	 * Invoke a view 
+	 */
+
+	public function actionTeams()
+	{
+    $model=new Teams;
+
+    // uncomment the following code to enable ajax-based validation
+    /*
+    if(isset($_POST['ajax']) && $_POST['ajax']==='teams-teams-form')
+    {
+        echo CActiveForm::validate($model);
+        Yii::app()->end();
+    }
+    */
+
+    if(isset($_POST['Teams']))
+    {
+        $model->attributes=$_POST['Teams'];
+        if($model->validate())
+        {
+            // form inputs are valid, do something here
+            return;
+        }
+    }
+    $this->render('teams',array('model'=>$model));
+	}
+	
+	
+	/**
+	 * Displays a particular model.
+	 * @param integer $id the ID of the model to be displayed
+	 */
+	public function actionView($id)
+	{
+		$this->render('view',array(
+			'model'=>$this->loadModel($id),
+		));
+	}
+
+	
+	
+	/**
+	 * Creates a new model.
+	 * If creation is successful, the browser will be redirected to the 'view' page.
+	 */
+	public function actionCreate()
+	{
+		$model=new Teams;
+
+		// Uncomment the following line if AJAX validation is needed
+		// $this->performAjaxValidation($model);
+
+		if(isset($_POST['Teams']))
+		{
+			$model->attributes=$_POST['Teams'];
+			if($model->save())
+				$this->redirect(array('view','id'=>$jsonfile->id));
+				
+		}
+
+		$this->render('create',array(
+			'model'=>$model,
+		));
+	}
+	
+
+	/**
+	 * Updates a particular model.
+	 * If update is successful, the browser will be redirected to the 'view' page.
+	 * @param integer $id the ID of the model to be updated
+	 */
+	public function actionUpdate($id)
+	{
+		$model=$this->loadModel($id);
+
+		// Uncomment the following line if AJAX validation is needed
+		// $this->performAjaxValidation($model);
+
+		if(isset($_POST['Teams']))
+		{
+			$model->attributes=$_POST['Teams'];
+			if($model->save())
+				$this->redirect(array('view','id'=>$model->id));
+		}
+
+		$this->render('update',array(
+			'model'=>$model,     
+		));
+	}
+
+	/**
+	 * Deletes a particular model.
+	 * If deletion is successful, the browser will be redirected to the 'admin' page.
+	 * @param integer $id the ID of the model to be deleted
+	 */
+	public function actionDelete($id)
+	{
+		$this->loadModel($id)->delete();
+
+		// if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
+		if(!isset($_GET['ajax']))
+			$this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
+	}
+
+	/**
+	 * Lists all models.
+	 */
+	public function actionIndex()
+	{
+		$dataProvider=new CActiveDataProvider('Teams');
+		/*$this->render('index',array(
+			'dataProvider'=>$dataProvider,
+		));*/
+		
+		$this->renderJSON($dataProvider->getData());
+		
+		//$page = getParam......comming soon
+		
+	}
+	
+	/**
+	 * 
+	 * Stores to a json feed ...
+	 * @param 
+	 */
+	
+	protected function renderJSON($data)
+	{
+    header('Content-type:application/json ;charset=utf-8');
+        
+    $criteria = new CDbCriteria;
+	$pages = new CPagination(Teams::model()->count());
+
+	$pages->pageSize = 200 ;
+	$pages->applyLimit($criteria);
+	$teams = Teams::model()->findAll($criteria);
+
+	
+	//$this->render('view', array('pages' => $pages));
+    
+    
+  //  $teams =Teams::model()->findAll();
+ 	echo CJSON::encode($teams);
+ 	
+ 	
+
+    foreach (Yii::app()->log->routes as $route) {
+        if($route instanceof CWebLogRoute) {
+            $route->enabled = false; // disable any weblogroutes
+        }
+  
+    }
+    Yii::app()->end();
+	}
+
+	/**
+	 * Manages all models.
+	 */
+	public function actionAdmin()
+	{
+		$model=new Teams('search');
+		$model->unsetAttributes();  // clear any default values
+		if(isset($_GET['Teams']))
+			$model->attributes=$_GET['Teams'];
+
+		$this->render('admin',array(
+			'model'=>$model,
+		));
+	}
+
+	/**
+	 * Returns the data model based on the primary key given in the GET variable.
+	 * If the data model is not found, an HTTP exception will be raised.
+	 * @param integer $id the ID of the model to be loaded
+	 * @return Teams the loaded model
+	 * @throws CHttpException
+	 */
+	public function loadModel($id)
+	{
+		$model=Teams::model()->findByPk($id);
+		if($model===null)
+			throw new CHttpException(404,'The requested page does not exist.');
+		return $model;
+	}
+
+	/**
+	 * Performs the AJAX validation.
+	 * @param Teams $model the model to be validated
+	 */
+	protected function performAjaxValidation($model)
+	{
+		if(isset($_POST['ajax']) && $_POST['ajax']==='teams-form')
+		{
+			echo CActiveForm::validate($model);
+			Yii::app()->end();
+		}
+	}
+}
